@@ -1,10 +1,61 @@
+import os
+import chromadb
 from typing import Optional, Dict, Any
 from langchain.tools import tool
 from langchain_experimental.tools.python.tool import PythonAstREPLTool
 from pydantic import BaseModel, Field
 
-# Assuming these exist in your retrieval pipeline
-# from src.retrieval.search import perform_hybrid_search, perform_metadata_search
+# Ensure we point to the exact same ChromaDB path built by the chunker
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DB_PATH = os.path.join(BASE_DIR, "chroma_financial_db")
+COLLECTION_NAME = "financial_statements"
+
+def perform_metadata_search(query: str, filters: dict, n_results: int = 5) -> str:
+    """Helper function to execute queries against ChromaDB with robust post-filtering"""
+    try:
+        chroma_client = chromadb.PersistentClient(path=DB_PATH)
+        collection = chroma_client.get_collection(name=COLLECTION_NAME)
+        
+        # 1. Pre-filter: Only pass the 'ticker' to ChromaDB to completely avoid the $and syntax bug
+        chroma_filter = {}
+        if "ticker" in filters:
+            chroma_filter = {"ticker": filters["ticker"]}
+            
+        # 2. Fetch a larger pool of results to ensure we have enough after Python filtering
+        results = collection.query(
+            query_texts=[query],
+            n_results=30,
+            where=chroma_filter if chroma_filter else None
+        )
+        
+        if not results['documents'] or not results['documents'][0]:
+            return "No financial documents found matching the query."
+            
+        # 3. Post-filter in Python: Match exact year and document type
+        valid_chunks = []
+        for i in range(len(results['documents'][0])):
+            meta = results['metadatas'][0][i]
+            chunk = results['documents'][0][i]
+            
+            # Check if this chunk matches ALL requested filters
+            match = True
+            for k, v in filters.items():
+                if meta.get(k) != v:
+                    match = False
+                    break
+                    
+            if match:
+                valid_chunks.append(chunk)
+                if len(valid_chunks) == n_results:
+                    break
+                    
+        if not valid_chunks:
+            return f"No financial documents found matching the exact filters: {filters}"
+            
+        return "\n\n---\n\n".join(valid_chunks)
+        
+    except Exception as e:
+        return f"Error connecting to database: {str(e)}"
 
 class TableSearchInput(BaseModel):
     query: str = Field(description="The specific financial metric or table sought (e.g., 'Total Revenue', 'Operating Margins').")
@@ -18,20 +69,13 @@ def search_financial_tables(query: str, company_ticker: str, year: int, document
     Search strictly within financial tables and numerical data. 
     Requires strict metadata filtering to prevent retrieving the wrong year or company.
     """
-    # Construct exact metadata filter for your Vector DB (e.g., Pinecone/Weaviate)
-    metadata_filter = {
+    # Flat dictionary for robust Python post-filtering
+    filters = {
         "ticker": company_ticker.upper(),
         "year": year,
-        "doc_type": document_type.upper(),
-        "is_table": True # Assuming your chunker tags tables
+        "document_type": document_type.upper()
     }
-    
-    # Mocking the actual DB call from src.retrieval.search
-    # context = perform_metadata_search(query=query, filters=metadata_filter)
-    
-    # Mock response for illustration
-    context = f"[Simulated Output] Retrieved table data for {company_ticker} {year} {document_type} related to '{query}'."
-    return context
+    return perform_metadata_search(query=query, filters=filters, n_results=5)
 
 @tool("search_unstructured_text")
 def search_unstructured_text(query: str, company_ticker: Optional[str] = None) -> str:
@@ -43,18 +87,11 @@ def search_unstructured_text(query: str, company_ticker: Optional[str] = None) -
     if company_ticker:
         filters["ticker"] = company_ticker.upper()
         
-    # Mocking the actual DB call from src.retrieval.search
-    # context = perform_hybrid_search(query=query, filters=filters)
-    
-    # Mock response
-    context = f"[Simulated Output] Retrieved narrative context for '{query}'."
-    return context
+    return perform_metadata_search(query=query, filters=filters, n_results=5)
 
 def get_financial_tools() -> list:
     """Returns the list of tools available to the agent."""
     
-    # Langchain's built-in Python REPL tool is excellent for math calculations.
-    # It safely evaluates python AST for math (e.g., calculating YoY growth).
     calculator_tool = PythonAstREPLTool(
         name="python_calculator",
         description="A Python shell. Use this to execute python commands to calculate math, percentages, or differences. Input should be a valid python command. Print the final answer."

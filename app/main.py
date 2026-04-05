@@ -14,22 +14,44 @@ load_dotenv()
 
 # Set up the Streamlit page configuration
 st.set_page_config(
-    page_title="Financial AI Analyst",
-    page_icon="💹",
-    layout="centered"
+    page_title="Financial Intelligence Platform",
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
+
+# --- Custom CSS for a modern, contemporary design ---
+st.markdown("""
+<style>
+    html, body, [class*="css"]  {
+        font-family: 'Inter', 'Helvetica Neue', sans-serif;
+    }
+    h1 {
+        font-weight: 600;
+        color: #1f2937;
+        padding-bottom: 0px;
+    }
+    .subtitle {
+        color: #6b7280; 
+        font-size: 1.1em; 
+        margin-bottom: 2rem;
+    }
+    .stChatInputContainer {
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # -------------------------------------------------------------------
 # 1. Initialize Session State
 # -------------------------------------------------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Hello! I am your Financial Analyst AI. I can search SEC filings, extract exact metrics, and calculate margins or YoY growth. What would you like to know?"}
+        {"role": "assistant", "content": "Welcome to the Financial Intelligence Platform. I can query SEC filings, extract financial metrics, and calculate margins or growth. How can I assist you today?"}
     ]
 
-# Initialize the Agent only once to save time
 if "agent" not in st.session_state:
-    # You can surface these parameters in the sidebar later if you wish
     st.session_state.agent = FinancialRAGAgent(model_name="gpt-4o", temperature=0.0)
 
 # -------------------------------------------------------------------
@@ -37,55 +59,48 @@ if "agent" not in st.session_state:
 # -------------------------------------------------------------------
 render_sidebar()
 
-st.title("💹 Financial AI Analyst")
-st.write("Ask questions about company financials, risk factors, or growth metrics.")
+st.title("Financial AI Analyst")
+st.markdown('<p class="subtitle">Enterprise-grade financial data extraction and analysis.</p>', unsafe_allow_html=True)
+st.divider()
 
 # Display existing chat messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         
-        # If the assistant message has thoughts saved, render them
         if "thoughts" in msg:
             render_agent_thoughts(msg["thoughts"])
 
 # -------------------------------------------------------------------
 # 3. Handle User Input & Agent Execution
 # -------------------------------------------------------------------
-if prompt := st.chat_input("E.g., What was AAPL's revenue in 2023 vs 2022? Calculate the growth."):
+if prompt := st.chat_input("Enter your query (e.g., 'What was Boeing's Net Income in 2025?')..."):
     
-    # Add user message to UI and state
     st.session_state.messages.append({"role": "user", "content": prompt})
+    
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Process the agent response
     with st.chat_message("assistant"):
-        # We use a status container to show the user that the bot is actively using tools
-        with st.status("Analyzing financials and calculating...", expanded=True) as status_box:
+        with st.status("Processing financial data...", expanded=True) as status_box:
             
             try:
-                # Execute the agent
                 response = st.session_state.agent.query(prompt)
                 
                 final_answer = response.get("output", "I could not generate an answer.")
                 thoughts = response.get("intermediate_steps", [])
                 
-                status_box.update(label="Analysis Complete!", state="complete", expanded=False)
+                status_box.update(label="Analysis complete", state="complete", expanded=False)
                 
             except Exception as e:
-                final_answer = "I encountered an error while processing your request."
+                final_answer = "I encountered a system error while processing your request."
                 thoughts = []
-                st.error(f"Error details: {str(e)}")
-                status_box.update(label="Error occurred", state="error")
+                st.error(f"System Error: {str(e)}")
+                status_box.update(label="Analysis failed", state="error")
 
-        # Display the thoughts (tool execution) inside an expander
         render_agent_thoughts(thoughts)
-        
-        # Display the final text answer
         st.markdown(final_answer)
         
-    # Save the assistant's response and thoughts to session state
     st.session_state.messages.append({
         "role": "assistant", 
         "content": final_answer,

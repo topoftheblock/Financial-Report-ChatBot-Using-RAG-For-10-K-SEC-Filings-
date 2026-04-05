@@ -1,0 +1,14 @@
+streamlit
+python-dotenv
+requests
+chromadb
+numpy
+pandas
+beautifulsoup4
+pydantic
+langchain
+langchain-core
+langchain-openai
+langchain-text-splitters
+langchain-experimental
+langchain-classic
