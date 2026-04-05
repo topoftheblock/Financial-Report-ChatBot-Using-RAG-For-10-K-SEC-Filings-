@@ -3,12 +3,12 @@ import streamlit as st
 def render_sidebar():
     """Renders the sidebar with instructions and controls."""
     with st.sidebar:
-        st.title("📊 Financial RAG Agent")
+        st.title(" Financial RAG Agent")
         st.markdown("""
         **Capabilities:**
-        - 🔍 Semantic Search (MD&A, Risk Factors)
-        - 📈 Exact Table Lookups (Revenue, EPS)
-        - 🧮 Mathematical Calculations (YoY Growth, Margins)
+        - Semantic Search (MD&A, Risk Factors)
+        - Exact Table Lookups (Revenue, EPS)
+        - Mathematical Calculations (YoY Growth, Margins)
         """)
         
         st.divider()
@@ -28,7 +28,7 @@ def render_agent_thoughts(intermediate_steps):
     if not intermediate_steps:
         return
 
-    with st.expander("🛠️ View Agent's Thought Process & Calculations", expanded=False):
+    with st.expander(" View Agent's Thought Process & Calculations", expanded=False):
         for step in intermediate_steps:
             # step is a tuple: (AgentAction, Observation)
             action, observation = step
