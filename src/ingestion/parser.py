@@ -449,22 +449,30 @@ def parse_10k_html(file_path: str, output_path: str) -> str:
     return #text
 
 # %% Loop over .html documents to parse
-
-# Get Companies
-path = os.path.join(BASE_DIR, "data/raw/")
-companies = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
-
-for company in companies:
-    # Get the number of years
-    year_path = os.path.join(path, f"{company}/")
-    years = [y for y in os.listdir(year_path) if os.path.isdir(os.path.join(year_path, y))]
+def process_all_raw_html():
+    """Loops through the raw data directory and parses all HTML files."""
+    path = os.path.join(BASE_DIR, "data/raw/")
     
-    for year in years:
-        # Get the number of reports for each year
-        report_path = os.path.join(year_path, f"{year}/")
-        reports = [r for r in os.listdir(report_path)]
+    if not os.path.exists(path):
+        print(f"Path not found: {path}")
+        return
         
-        for report in reports: 
-            # Parse each .html file
-            file_path = os.path.join(report_path, f"{report}")
-            parse_10k_html(file_path, os.path.join(BASE_DIR, f"data/processed/{company}/{year}/"))
+    companies = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+
+    for company in companies:
+        # Get the number of years
+        year_path = os.path.join(path, f"{company}/")
+        years = [y for y in os.listdir(year_path) if os.path.isdir(os.path.join(year_path, y))]
+        
+        for year in years:
+            # Get the number of reports for each year
+            report_path = os.path.join(year_path, f"{year}/")
+            reports = [r for r in os.listdir(report_path)]
+            
+            for report in reports: 
+                # Parse each .html file
+                file_path = os.path.join(report_path, f"{report}")
+                parse_10k_html(file_path, os.path.join(BASE_DIR, f"data/processed/{company}/{year}/"))
+
+if __name__ == "__main__":
+    process_all_raw_html()

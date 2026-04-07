@@ -36,7 +36,7 @@ def store_vectors_in_chroma(chunks: list, db_path: str, collection_name: str, id
     
     print(f"Successfully stored {len(documents)} chunks into '{collection_name}' collection at '{db_path}'.")
 
-if __name__ == "__main__":
+def embed_all_processed_files():
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     PROCESSED_DIR = os.path.join(BASE_DIR, "data", "processed")
     DB_PATH = os.path.join(BASE_DIR, "chroma_financial_db")
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     if not os.path.exists(PROCESSED_DIR):
         print(f"Could not find processed data directory at: {PROCESSED_DIR}")
-        exit()
+        return
 
     companies = [d for d in os.listdir(PROCESSED_DIR) if os.path.isdir(os.path.join(PROCESSED_DIR, d))]
 
@@ -76,3 +76,6 @@ if __name__ == "__main__":
                     collection_name=COLLECTION_NAME,
                     id_prefix=f"{company}_10K_{year}"
                 )
+
+if __name__ == "__main__":
+    embed_all_processed_files()
