@@ -9,6 +9,7 @@ from src.agent.main_graph_nodes_and_edges import (
 
 checkpointer = InMemorySaver()
 
+# Build the Graph
 workflow = StateGraph(AgentState)
 
 workflow.add_node("Orchestrator", orchestrator_node)
@@ -21,15 +22,19 @@ workflow.add_edge("Orchestrator", "Researcher")
 workflow.add_edge("Researcher", "Quant")
 workflow.add_edge("Quant", "Reviewer")
 
+# CRAG Routing Logic
 def crag_router(state: AgentState) -> Literal["Researcher", "END"]:
+    # Prevent infinite loops
     if state.get("iteration_count", 0) >= 3:
         return "END"
+        
     if state.get("needs_rework", False):
         return "Researcher"
     return "END"
 
 workflow.add_conditional_edges("Reviewer", crag_router, {"Researcher": "Researcher", "END": END})
 
+# Compile the graph
 agent_graph = workflow.compile(checkpointer=checkpointer)
 
 if __name__ == "__main__":
