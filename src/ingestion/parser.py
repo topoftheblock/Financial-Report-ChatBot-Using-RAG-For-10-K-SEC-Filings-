@@ -384,34 +384,38 @@ client = OpenAI()
 # ── LLM Table Summarization ───────────────────────────────────────────────────
 def _summarize_table_with_llm(table_md: str) -> str:
     """
-    Passes the markdown table to a cheap LLM to generate a brief, 
-    search-optimized heading and summary.
+    Passes the markdown table to a cheap LLM to generate a search-optimized 
+    heading, summary, and explicit list of contained metrics.
     """
     # Prevent sending empty or tiny tables (like formatting artifacts) to the LLM
     if not table_md or len(table_md) < 100:
         return ""
 
+    # EXPANDED PROMPT: Added more specific examples from all 3 major financial statements
     prompt = (
         "You are a financial data assistant. Below is a markdown table extracted from an SEC 10-K report. "
-        "Provide a concise, 1-to-2 sentence summary of what financial data this table contains. "
-        "Do not include the data itself, just describe the table's purpose and contents. "
-        "Start directly with the summary.\n\n"
+        "First, provide a brief 1-sentence summary of the table's purpose. "
+        "Second, and most importantly, provide a comprehensive comma-separated list of all major financial "
+        "line items, metrics, and indicators found in the rows/columns of the table. "
+        "Explicitly look for and include items such as: 'Total Assets, Net Income, Total Liabilities, "
+        "Operating Expenses, Shareholder Equity, Operating Cash Flow, Gross Margin, Earnings Per Share (EPS), "
+        "Long-Term Debt, Retained Earnings, Revenue, Cost of Goods Sold, and Capital Expenditures'. "
+        "Do not include the numeric values, but be highly specific with the metric names to aid semantic search. "
+        "Start directly with the summary, followed by 'Metrics included: '.\n\n"
         f"Table:\n{table_md}"
     )
 
     try:
-        # EXACT FIX HERE: Ensure model, temperature, max_completion_tokens, and messages are all present
         response = client.chat.completions.create(
             model="gpt-4o-mini", 
             temperature=0.0,
-            max_completion_tokens=100,
+            max_completion_tokens=250,
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"LLM Summarization failed: {e}")
         return ""
-    
 # ── Main parser ───────────────────────────────────────────────────────────────
 def parse_10k_html(file_path: str, output_path: str) -> str:
     """

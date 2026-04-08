@@ -106,7 +106,7 @@ def multi_year_financial_search(query: str, company_ticker: str, years: list[int
 
 @tool
 def calculate_financial_kpi(
-    kpi_name: Literal["margin", "roe", "roa", "debt_to_equity", "yoy_growth", "free_cash_flow"],
+    kpi_name: Literal["margin", "roe", "roa", "debt_to_equity", "yoy_growth", "free_cash_flow", "eps", "current_ratio", "cac", "pe_ratio"],
     value1: float,
     value2: float
 ) -> str:
@@ -121,6 +121,10 @@ def calculate_financial_kpi(
     - 'debt_to_equity': value1 = total debt, value2 = total equity
     - 'yoy_growth': value1 = current year value, value2 = previous year value
     - 'free_cash_flow': value1 = operating cash flow, value2 = capital expenditures
+    - 'eps': value1 = net income, value2 = average outstanding shares
+    - 'current_ratio': value1 = current assets, value2 = current liabilities
+    - 'cac': value1 = total sales & marketing expenses, value2 = new customers acquired
+    - 'pe_ratio': value1 = current share price, value2 = earnings per share
     """
     try:
         if kpi_name == "margin":
@@ -138,6 +142,18 @@ def calculate_financial_kpi(
         elif kpi_name == "free_cash_flow":
             result = value1 - value2
             return f"${result:,.2f}"
+        elif kpi_name == "eps":
+            result = value1 / value2
+            return f"${result:,.2f}"
+        elif kpi_name == "current_ratio":
+            result = value1 / value2
+            return f"{result:.2f}x"
+        elif kpi_name == "cac":
+            result = value1 / value2
+            return f"${result:,.2f}"
+        elif kpi_name == "pe_ratio":
+            result = value1 / value2
+            return f"{result:.2f}x"
         else:
             return "Unknown KPI requested."
     except ZeroDivisionError:

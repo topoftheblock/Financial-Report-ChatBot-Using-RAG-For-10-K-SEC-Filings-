@@ -52,11 +52,8 @@ def render_agent_thoughts(intermediate_steps):
                 st.write(f"** Tool Input:** `{tool_input}`")
                 
                 # 3. Print the Observation (What the database/calculator returned)
+                # The truncation logic has been entirely removed here to display the complete response.
                 obs_str = str(observation).replace("$", r"\$")
-                
-                # Truncate massive DB returns so the UI doesn't freeze
-                if len(obs_str) > 600:
-                    obs_str = obs_str[:600] + "\n\n... [Truncated for UI readability]"
                 
                 st.success(f"**Observation (Result):**\n\n{obs_str}")
                 
