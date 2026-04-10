@@ -4,6 +4,26 @@ A sophisticated **Retrieval-Augmented Generation (RAG)** system for financial an
 
 ---
 
+## The Problem
+
+Analyzing SEC 10-K financial reports is a notoriously tedious process. These documents are hundreds of pages long, filled with dense legal jargon, and packed with complex financial tables. While Large Language Models (LLMs) seem like the perfect tool to summarize this data, applying standard LLMs or basic RAG systems to financial documents introduces critical failures:
+
+- **The Hallucination Problem** — LLMs are terrible at arithmetic and tend to guess or hallucinate numbers when asked to calculate metrics like Year-over-Year (YoY) growth or operating margins. In finance, a single hallucinated digit makes the entire system untrustworthy.
+- **The Table Parsing Problem** — Financial data lives in tables. Traditional RAG systems blind-split text into chunks, destroying the structure of tables and divorcing numbers from their column headers.
+- **The Data-Mixing Problem** — If you ask a standard RAG system to "compare revenue," it might accidentally retrieve Apple's 2024 data and Boeing's 2025 data, seamlessly blending them into a confidently wrong answer.
+
+---
+
+## The Solution
+
+This project is a precision-engineered RAG pipeline designed specifically to overcome the limitations of LLMs in financial contexts. It shifts the LLM from being a "text generator" to a **reasoning engine orchestrating deterministic tools**:
+
+- **Financial-Grade Accuracy via Tooling** — Instead of letting the LLM guess math, the agent is equipped with a sandboxed `python_calculator`. If a user asks for profit margins, the agent fetches the raw numbers, writes actual Python code, executes it, and returns the mathematically perfect result.
+- **Smart Markdown Transformation** — The custom ingestion pipeline (`parser.py`) doesn't just strip HTML; it intelligently reconstructs complex SEC tables into clean, LLM-readable Markdown, keeping numbers locked to their context.
+- **Hard-Boundary Retrieval** — By strictly enforcing metadata filters (`Ticker` and `Year`) at the ChromaDB level, the agent is structurally prevented from mixing up companies or timelines.
+
+---
+
 ## System Architecture
 
 The pipeline is divided into modular components that take data from raw source to an interactive conversational agent.
@@ -13,7 +33,6 @@ The pipeline is divided into modular components that take data from raw source t
 `src/sec_10k_scraper.py` interfaces with the **SEC EDGAR** database to download raw HTML 10-K filings for specified company tickers and years, storing them in `data/raw/`.
 
 ### 2. Parsing & Preprocessing
-![Agent Thoughts](demo0.png)
 
 `src/ingestion/parser.py` converts messy HTML into clean Markdown:
 
@@ -77,26 +96,31 @@ When a user submits a prompt, the agent enters a reasoning loop and will not ret
 - **Zero hallucination arithmetic** — By forcing the LLM to use `python_calculator` for math, the risk of the model guessing numbers is eliminated entirely.
 - **Deterministic filtering** — Because `semantic_financial_search` accepts `company_ticker` and `year` as explicit arguments, the LLM natively pre-filters the vector database. A search for Apple will structurally ignore all other filings, ensuring high-fidelity retrieval.
 - **Full transparency** — The Streamlit UI exposes the exact internal `Thought → Action → Observation` loop, making it straightforward to debug any incorrect answers.
+
 ---
 
 ## Demo
 
-Here is a look at the Financial RAG Agent in action:
-
 ### 1. Conversational Interface & Contextual Citations
+
 ![Chat Interface](demo1.png)
-*The agent synthesizes complex financial queries into clear, professional bullet points. It strictly cites its sources directly from the retrieved SEC filings using inline metadata (Ticker, Year, Section).*
-*The sidebar provides a quick overview of the agent's capabilities, controls to clear the chat history, and an interactive toggle to view the system's underlying LangChain Tool-Calling architecture.*
+
+The agent synthesizes complex financial queries into clear, professional bullet points. It strictly cites its sources directly from the retrieved SEC filings using inline metadata (Ticker, Year, Section).
+
+The sidebar provides a quick overview of the agent's capabilities, controls to clear the chat history, and an interactive toggle to view the system's underlying LangChain Tool-Calling architecture.
 
 ### 2. Transparent Agent Reasoning
+
 ![Agent Thoughts](demo2.png)
-*Users can expand the "View Agent Thought Process" tab to see exactly how the LangChain agent is thinking. It displays the internal reasoning, the tools called (e.g., `semantic_financial_search`, `python_calculator`), and the raw data retrieved from the vector database before it generates the final answer.*
+
+Users can expand the **"View Agent Thought Process"** tab to see exactly how the LangChain agent is thinking. It displays the internal reasoning, the tools called (e.g., `semantic_financial_search`, `python_calculator`), and the raw data retrieved from the vector database before it generates the final answer.
 
 ![Agent Thoughts](demo3.png)
 ![Agent Thoughts](demo4.png)
 ![Agent Thoughts](demo5.png)
 
 ---
+
 ## Directory Structure
 
 ```text
