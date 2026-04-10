@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  financial-rag-bot:
+    build: .
+    container_name: financial_rag_bot
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      # Mount the database and data folders so data persists even if the container restarts
+      - ./chroma_financial_db:/app/chroma_financial_db
+      - ./data:/app/data
+    restart: unless-stopped

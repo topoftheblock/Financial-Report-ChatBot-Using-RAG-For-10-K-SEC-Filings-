@@ -357,6 +357,24 @@ def _process_table(table):
                         # WIPE THE RIGHT ONE to keep data anchored to the left
                         if is_duplicate:
                             df.iloc[i, j+1] = np.nan
+                            
+            # ---------------------------------------------------------
+            # STEP 5: FORMAT ACCOUNTING NEGATIVES
+            # ---------------------------------------------------------
+            # In Python/LLM context, (100) evaluates to positive 100. 
+            # We must explicitly convert financial parentheses to negative signs.
+            
+            # Handle standard numbers: (1,000) -> -1,000
+            df = df.replace(r'^\s*\(\s*([\d,\.]+)\s*\)\s*$', r'-\1', regex=True)
+            
+            # Handle inner dollar signs: ($1,000) -> -$1,000
+            df = df.replace(r'^\s*\(\s*\$\s*([\d,\.]+)\s*\)\s*$', r'-$\1', regex=True)
+            
+            # Handle outer dollar signs: $(1,000) -> -$1,000
+            df = df.replace(r'^\s*\$\s*\(\s*([\d,\.]+)\s*\)\s*$', r'-$\1', regex=True)
+            
+            # Handle percentages: (10.5%) -> -10.5%
+            df = df.replace(r'^\s*\(\s*([\d,\.]+%)\s*\)\s*$', r'-\1', regex=True)
             
             # ---------------------------------------------------------
             # STEP 6: FINAL CLEANUP & MARKDOWN CONVERSION
