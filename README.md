@@ -18,7 +18,7 @@ Analyzing SEC 10-K financial reports is a notoriously tedious process. These doc
 
 This project is a precision-engineered RAG pipeline designed specifically to overcome the limitations of LLMs in financial contexts. It shifts the LLM from being a "text generator" to a **reasoning engine orchestrating deterministic tools**:
 
-- **Financial-Grade Accuracy via Tooling** — Instead of letting the LLM guess math, the agent is equipped with a sandboxed `python_calculator`. If a user asks for profit margins, the agent fetches the raw numbers, writes actual Python code, executes it, and returns the mathematically perfect result.
+- **Financial-Grade Accuracy via Tooling** — Instead of letting the LLM guess math, the agent is equipped with a sandboxed `python_calculator`. If a user asks for profit margins, the agent fetches the raw numbers, hands off the arithmetic expression to a `numexpr`-based evaluator, and returns the mathematically perfect result.
 - **Smart Markdown Transformation** — The custom ingestion pipeline (`parser.py`) doesn't just strip HTML; it intelligently reconstructs complex SEC tables into clean, LLM-readable Markdown, keeping numbers locked to their context.
 - **Hard-Boundary Retrieval** — By strictly enforcing metadata filters (`Ticker` and `Year`) at the ChromaDB level, the agent is structurally prevented from mixing up companies or timelines.
 
@@ -53,7 +53,7 @@ The reasoning engine is a streamlined **LangChain Tool-Calling Agent** (`src/age
 | Tool | Purpose |
 |---|---|
 | `semantic_financial_search` | Performs semantic similarity search across texts and Markdown tables. Dynamically applies ChromaDB metadata filters (Ticker, Year) to prevent hallucinating or mixing numbers across different filings. |
-| `python_calculator` | Python AST REPL code execution sandbox. Used by the agent to accurately compute percentages, YoY growth, and differences based strictly on the retrieved numbers. |
+| `python_calculator` | A `numexpr`-based arithmetic evaluator — mathematical expressions only, no arbitrary code execution. Used by the agent to accurately compute percentages, YoY growth, and differences based strictly on the retrieved numbers. |
 
 ---
 
@@ -70,7 +70,7 @@ At the center is an LLM (like GPT-4o) specifically fine-tuned for function calli
 The agent is completely blind to your financial data until it uses its tools. Two highly specialized tools are provided:
 
 - **`semantic_financial_search`** — This is the RAG pipeline. It takes the agent's semantic query, converts it into a vector, and searches the local ChromaDB. Crucially, it uses metadata filtering (`ticker` and `year`) to ensure the agent doesn't hallucinate or mix up Apple's 2025 data with Boeing's 2024 data.
-- **`python_calculator`** — Financial analysis requires exact math. LLMs are notoriously unreliable at arithmetic. By providing a Python AST REPL, the agent can write actual Python code (e.g., `(15000 - 12000) / 12000`) to compute YoY growth or profit margins with 100% accuracy.
+- **`python_calculator`** — Financial analysis requires exact math. LLMs are notoriously unreliable at arithmetic. By passing arithmetic expressions (e.g., `(15000 - 12000) / 12000`) to a `numexpr` evaluator — which can only parse mathematical expressions, not arbitrary code — the agent computes YoY growth or profit margins with 100% accuracy and no code-execution risk.
 
 #### C. Short-Term Memory (Context)
 
@@ -87,7 +87,7 @@ When a user submits a prompt, the agent enters a reasoning loop and will not ret
 3. **Observation 1** — The database returns chunks of text detailing Apple's legal and supply chain risks.
 4. **Action 2 (Retrieval)** — Calls `semantic_financial_search(query="revenue figures", company_ticker="AAPL", year=2025)`.
 5. **Observation 2** — The database returns a Markdown table showing $390B for 2025 and $383B for 2024.
-6. **Action 3 (Calculation)** — The agent calls `python_calculator(query="((390 - 383) / 383) * 100")`.
+6. **Action 3 (Calculation)** — The agent calls `python_calculator(expression="((390 - 383) / 383) * 100")`.
 7. **Observation 3** — The calculator returns `1.82`.
 8. **Final Synthesis** — The agent stops calling tools and synthesizes all observations into a polished, natural-language response complete with inline citations as mandated in `prompt.py`.
 
