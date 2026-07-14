@@ -1,12 +1,12 @@
 # Financial Report ChatBot Using RAG
 
-A sophisticated **Retrieval-Augmented Generation (RAG)** system for financial analysis of SEC 10-K reports. By combining Large Language Models, LangChain, and ChromaDB, the system lets users query dense financial filings to extract both qualitative insights (risk factors, business summaries) and quantitative data (revenue tables, operating margins) with high accuracy.
+A sophisticated **Retrieval-Augmented Generation (RAG)** system for financial analysis of SEC 10-K reports. By combining Large Language Models, LangChain, and ChromaDB, the system lets users query dense financial filings to extract both qualitative insights - risk factors, business summaries - and quantitative data - revenue tables, operating margins - with high accuracy.
 
 ---
 
 ## The Problem
 
-Analyzing SEC 10-K financial reports is a notoriously tedious process. These documents are hundreds of pages long, filled with dense legal jargon, and packed with complex financial tables. While Large Language Models (LLMs) seem like the perfect tool to summarize this data, applying standard LLMs or basic RAG systems to financial documents introduces critical failures:
+Analyzing SEC 10-K financial reports is a notoriously tedious process. These documents are hundreds of pages long, filled with dense legal jargon, and packed with complex financial tables. While Large Language Models seem like the perfect tool to summarize this data, applying standard LLMs or basic RAG systems to financial documents introduces critical failures:
 
 - **The Hallucination Problem** — LLMs are terrible at arithmetic and tend to guess or hallucinate numbers when asked to calculate metrics like Year-over-Year (YoY) growth or operating margins. In finance, a single hallucinated digit makes the entire system untrustworthy.
 - **The Table Parsing Problem** — Financial data lives in tables. Traditional RAG systems blind-split text into chunks, destroying the structure of tables and divorcing numbers from their column headers.
