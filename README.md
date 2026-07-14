@@ -231,13 +231,13 @@ Run individual component tests as modules from the root directory to automatical
 
 ```bash
 # Test the HTML parser
-python -m pytest src/tests/test_parser.py
+python -m pytest tests/test_parser.py
 
 # Test the Markdown chunker
-python -m pytest src/tests/test_chunker.py
+python -m pytest tests/test_chunker.py
 
 # Test database retrieval performance
-python -m pytest src/tests/test_retrieval_performance.py
+python -m pytest tests/test_retrieval_performance.py
 ```
 
 ## CI/CD Pipeline

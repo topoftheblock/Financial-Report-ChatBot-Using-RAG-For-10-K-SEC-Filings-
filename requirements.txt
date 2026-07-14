@@ -6,10 +6,11 @@ numpy
 pandas
 beautifulsoup4
 pydantic
+openai
+tiktoken
+numexpr
 langchain
 langchain-core
 langchain-openai
 langchain-text-splitters
-langchain-experimental
 langchain-classic
-requests

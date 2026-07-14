@@ -61,6 +61,7 @@ class FilingRecord:
 
 # --- HELPER FUNCTIONS ---
 
+
 def get_json(url: str, headers: Dict[str, str]) -> dict:
     time.sleep(REQUEST_SLEEP_SECONDS)
     resp = requests.get(url, headers=headers, timeout=60)
@@ -121,7 +122,9 @@ def collect_all_filings_for_cik(cik_10: str) -> dict:
 def build_html_url(cik_10: str, accession_number: str, primary_document: str) -> str:
     acc_nodash = accession_number.replace("-", "")
     cik_no_zeros = str(int(cik_10))
-    return f"{BASE_SEC}/Archives/edgar/data/{cik_no_zeros}/{acc_nodash}/{primary_document}"
+    return (
+        f"{BASE_SEC}/Archives/edgar/data/{cik_no_zeros}/{acc_nodash}/{primary_document}"
+    )
 
 
 def build_index_url(cik_10: str, accession_number: str) -> str:
@@ -132,11 +135,12 @@ def build_index_url(cik_10: str, accession_number: str) -> str:
 
 # --- MAIN WRAPPER FUNCTION ---
 
+
 def download_10ks(
     tickers: List[str],
     start_year: int = 2020,
     end_year: int = 2025,
-    output_dir: str = "data"
+    output_dir: str = "data",
 ):
     """
     Call this function to run the downloader.
@@ -207,7 +211,9 @@ def download_10ks(
                         primary_doc_description=row.get("primaryDocDescription"),
                         sec_filing_url=html_url,
                         sec_index_url=index_url,
-                        local_html_path=str(local_html_file) if local_html_file else None,
+                        local_html_path=str(local_html_file)
+                        if local_html_file
+                        else None,
                     )
                 )
 
@@ -224,10 +230,17 @@ def download_10ks(
 
         print(f"\nDone! Files saved to {out_path}. Metadata at {csv_file}")
     else:
-        print("\nDone, but no 10-K filings were found for the requested tickers/year range.")
+        print(
+            "\nDone, but no 10-K filings were found for the requested tickers/year range."
+        )
 
 
 # --- HOW TO RUN IN SPYDER ---
 if __name__ == "__main__":
     my_tickers = ["BA", "NVDA", "AAPL", "WMT"]
-    download_10ks(tickers=my_tickers, start_year=2025, end_year=2025, output_dir = os.path.join(BASE_DIR, "data/"))
+    download_10ks(
+        tickers=my_tickers,
+        start_year=2025,
+        end_year=2025,
+        output_dir=os.path.join(BASE_DIR, "data/"),
+    )

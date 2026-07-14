@@ -1,7 +1,8 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+
 def get_financial_agent_prompt() -> ChatPromptTemplate:
-    system_message = """You are an expert Financial AI Analyst.
+    system_message = r"""You are an expert Financial AI Analyst.
     Your task is to answer complex financial queries using the provided tools.
     
     Follow this thought process for every query:
@@ -27,10 +28,12 @@ def get_financial_agent_prompt() -> ChatPromptTemplate:
     Example format: "Apple's revenue grew by 5% [Source: AAPL | Year: 2025 | Section: Financial Highlights]."
     NEVER output the words "Exact Passage:". Just write the answer and append the [Source: ...] bracket.
     """
-    
-    return ChatPromptTemplate.from_messages([
-        ("system", system_message),
-        MessagesPlaceholder(variable_name="chat_history", optional=True),
-        ("user", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad"),
-    ])
+
+    return ChatPromptTemplate.from_messages(
+        [
+            ("system", system_message),
+            MessagesPlaceholder(variable_name="chat_history", optional=True),
+            ("user", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ]
+    )

@@ -47,4 +47,4 @@ jobs:
         OPENAI_API_KEY: "sk-dummy-key-for-testing-do-not-use"
       run: |
         # PYTHONPATH=. ensures Python finds your 'src' and 'app' modules correctly
-        PYTHONPATH=. pytest src/tests/
+        PYTHONPATH=. pytest tests/

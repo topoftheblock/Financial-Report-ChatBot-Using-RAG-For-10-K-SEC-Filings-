@@ -1,6 +1,10 @@
 import os
 import chromadb
-from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
+from langchain_text_splitters import (
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+)
+
 
 def chunk_markdown_file(file_path: str, base_metadata: dict) -> list:
     with open(file_path, "r", encoding="utf-8") as file:
@@ -8,19 +12,18 @@ def chunk_markdown_file(file_path: str, base_metadata: dict) -> list:
 
     # Pass 1: Split by logical headers
     headers_to_split_on = [("#", "Header 1"), ("##", "Header 2"), ("###", "Header 3")]
-    
+
     # ADDED: strip_headers=False keeps the header text inside the resulting chunks
     markdown_splitter = MarkdownHeaderTextSplitter(
-        headers_to_split_on=headers_to_split_on,
-        strip_headers=False 
+        headers_to_split_on=headers_to_split_on, strip_headers=False
     )
     md_header_splits = markdown_splitter.split_text(markdown_document)
 
     # Pass 2: Split by size to ensure embeddability (adjust size/overlap as needed)
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=6_000, 
+        chunk_size=6_000,
         chunk_overlap=400,
-        separators=["\n\n", "\n", " ", ""] # Will try not to break tables if possible
+        separators=["\n\n", "\n", " ", ""],  # Will try not to break tables if possible
     )
     final_splits = text_splitter.split_documents(md_header_splits)
 
@@ -28,21 +31,24 @@ def chunk_markdown_file(file_path: str, base_metadata: dict) -> list:
     for split in final_splits:
         # Determine the most specific section name available
         section_name = (
-            split.metadata.get("Header 3") or 
-            split.metadata.get("Header 2") or 
-            split.metadata.get("Header 1") or 
-            "Unknown"
+            split.metadata.get("Header 3")
+            or split.metadata.get("Header 2")
+            or split.metadata.get("Header 1")
+            or "Unknown"
         )
-        
+
         # Add the unified section name to the metadata
         split.metadata["section"] = section_name
-        
+
         # Merge with the base company/year metadata
         split.metadata.update(base_metadata)
-        
+
     return final_splits
 
-def store_vectors_in_chroma(chunks: list, db_path: str, collection_name: str, id_prefix: str) -> None:
+
+def store_vectors_in_chroma(
+    chunks: list, db_path: str, collection_name: str, id_prefix: str
+) -> None:
     chroma_client = chromadb.PersistentClient(path=db_path)
     collection = chroma_client.get_or_create_collection(name=collection_name)
 
@@ -50,13 +56,12 @@ def store_vectors_in_chroma(chunks: list, db_path: str, collection_name: str, id
     metadatas = [chunk.metadata for chunk in chunks]
     ids = [f"{id_prefix}_{i}" for i in range(len(documents))]
 
-    collection.add(
-        documents=documents,
-        metadatas=metadatas,
-        ids=ids
+    collection.add(documents=documents, metadatas=metadatas, ids=ids)
+
+    print(
+        f"Successfully stored {len(documents)} chunks into '{collection_name}' collection at '{db_path}'."
     )
-    
-    print(f"Successfully stored {len(documents)} chunks into '{collection_name}' collection at '{db_path}'.")
+
 
 def embed_all_processed_files():
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -68,36 +73,44 @@ def embed_all_processed_files():
         print(f"Could not find processed data directory at: {PROCESSED_DIR}")
         return
 
-    companies = [d for d in os.listdir(PROCESSED_DIR) if os.path.isdir(os.path.join(PROCESSED_DIR, d))]
+    companies = [
+        d
+        for d in os.listdir(PROCESSED_DIR)
+        if os.path.isdir(os.path.join(PROCESSED_DIR, d))
+    ]
 
     for company in companies:
         company_path = os.path.join(PROCESSED_DIR, company)
-        years = [y for y in os.listdir(company_path) if os.path.isdir(os.path.join(company_path, y))]
-        
+        years = [
+            y
+            for y in os.listdir(company_path)
+            if os.path.isdir(os.path.join(company_path, y))
+        ]
+
         for year in years:
             target_file = os.path.join(company_path, year, "10-K.md")
-            
+
             if os.path.exists(target_file):
                 print(f"Chunking and embedding: {company} - {year}")
-                
+
                 company_metadata = {
                     "company": company,
                     "ticker": company,
                     "document_type": "10-K",
-                    "year": int(year)
+                    "year": int(year),
                 }
-                
+
                 document_chunks = chunk_markdown_file(
-                    file_path=target_file, 
-                    base_metadata=company_metadata
+                    file_path=target_file, base_metadata=company_metadata
                 )
-                
+
                 store_vectors_in_chroma(
-                    chunks=document_chunks, 
-                    db_path=DB_PATH, 
+                    chunks=document_chunks,
+                    db_path=DB_PATH,
                     collection_name=COLLECTION_NAME,
-                    id_prefix=f"{company}_10K_{year}"
+                    id_prefix=f"{company}_10K_{year}",
                 )
+
 
 if __name__ == "__main__":
     embed_all_processed_files()
